@@ -6,4 +6,6 @@
 
 `run_lammps_python.ipynb`: A jupyter notebook showing how to run LAMMPS from a Python environment.
 
+`Stress-Strain Simulation of Graphene`: An example for simulating the stress-strain relation in graphene
+
 More yet to come...

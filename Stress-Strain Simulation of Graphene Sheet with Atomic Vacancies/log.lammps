@@ -1,0 +1,247 @@
+LAMMPS (29 Oct 2020)
+# Model parameters
+units               metal
+dimension           3
+boundary            p p p
+neighbor            0.3 bin
+neigh_modify        every 5 delay 0
+
+# Define variables
+variable		    dt equal 0.001
+variable		    T equal 300
+variable		    srate equal 0.005
+timestep            ${dt}
+timestep            0.001
+
+# Read graphene data
+read_data           data.${percent}.lmp #grap.data
+read_data           data.0.25.lmp 
+Reading data file ...
+  orthogonal box = (0.0000000 0.0000000 0.0000000) to (98.400000 85.216900 20.000000)
+  2 by 2 by 1 MPI processor grid
+  reading atoms ...
+  2400 atoms
+  read_data CPU = 0.003 seconds
+
+# read_restart relax.equil
+
+# delete_atoms porosity all 0.05 12345
+
+# Set potential/force field
+pair_style          airebo 3.0 0 0
+pair_coeff          * * CH.airebo C
+Reading airebo potential file CH.airebo with DATE: 2011-10-25
+
+# Minimize energy and force
+min_style           cg
+minimize            1e-10 1e-10 5000 5000
+WARNING: Using 'neigh_modify every 1 delay 0 check yes' setting during minimization (../min.cpp:187)
+Neighbor list info ...
+  update every 1 steps, delay 0 steps, check yes
+  max neighbors/atom: 2000, page size: 100000
+  master list distance cutoff = 6.3
+  ghost atom cutoff = 6.3
+  binsize = 3.15, bins = 32 28 7
+  1 neighbor lists, perpetual/occasional/extra = 1 0 0
+  (1) pair airebo, perpetual
+      attributes: full, newton on, ghost
+      pair build: full/bin/ghost
+      stencil: full/ghost/bin/3d
+      bin: standard
+Per MPI rank memory allocation (min/avg/max) = 5.151 | 5.153 | 5.155 Mbytes
+Step Temp E_pair E_mol TotEng Press 
+       0            0   -14224.048            0   -14224.048   -11883.422 
+      50            0   -14840.055            0   -14840.055    4129.9149 
+Loop time of 0.187581 on 4 procs for 50 steps with 2400 atoms
+
+63.7% CPU use with 4 MPI tasks x no OpenMP threads
+
+Minimization stats:
+  Stopping criterion = linesearch alpha is zero
+  Energy initial, next-to-last, final = 
+     -14224.0483691629   -14840.054517387   -14840.054517387
+  Force two-norm initial, final = 117.68915 21.664182
+  Force max component initial, final = 5.4976484 5.2864826
+  Final line search alpha, max atom move = 1.7617056e-11 9.3132257e-11
+  Iterations, force evaluations = 50 119
+
+MPI task timing breakdown:
+Section |  min time  |  avg time  |  max time  |%varavg| %total
+---------------------------------------------------------------
+Pair    | 0.10262    | 0.11125    | 0.11862    |   1.7 | 59.31
+Neigh   | 0.052719   | 0.054505   | 0.058346   |   1.0 | 29.06
+Comm    | 0.0074598  | 0.01855    | 0.028567   |   5.6 |  9.89
+Output  | 0          | 0          | 0          |   0.0 |  0.00
+Modify  | 0          | 0          | 0          |   0.0 |  0.00
+Other   |            | 0.003275   |            |       |  1.75
+
+Nlocal:        600.000 ave         608 max         589 min
+Histogram: 1 0 0 0 0 1 0 1 0 1
+Nghost:        1347.00 ave        1375 max        1333 min
+Histogram: 1 1 1 0 0 0 0 0 0 1
+Neighs:        0.00000 ave           0 max           0 min
+Histogram: 4 0 0 0 0 0 0 0 0 0
+FullNghs:      20406.5 ave       20766 max       19468 min
+Histogram: 1 0 0 0 0 0 0 0 0 3
+
+Total # of neighbors = 81626
+Ave neighs/atom = 34.010833
+Neighbor list builds = 24
+Dangerous builds = 0
+
+write_data          graphene_min.xyz
+System init for write_data ...
+# dump		        1 all custom 100 graphene_min.xyz id type x y z
+# undump            1
+
+# Define computes
+# compute 	        1 all stress/atom NULL
+# compute           2 all reduce sum c_1[1] c_1[2]
+
+# Initialize temperature
+reset_timestep	    0
+velocity		    all create ${T} 123456 dist gaussian
+velocity		    all create 300 123456 dist gaussian
+fix				    1 all npt temp ${T} ${T} $(100*dt) iso 0 0 $(1000*dt)
+fix				    1 all npt temp 300 ${T} $(100*dt) iso 0 0 $(1000*dt)
+fix				    1 all npt temp 300 300 $(100*dt) iso 0 0 $(1000*dt)
+fix				    1 all npt temp 300 300 0.10000000000000000555 iso 0 0 $(1000*dt)
+fix				    1 all npt temp 300 300 0.10000000000000000555 iso 0 0 1
+# fix				    1 all npt temp ${T} ${T} $(100*dt) x 0 0 $(1000*dt) y 0 0 $(1000*dt) z 0 0 $(1000*dt)
+dump			    1 all custom 5000 graphene_npt.xyz id type x y z
+thermo 	            2000
+run				    20000 # run 10 ps for relaxation
+Per MPI rank memory allocation (min/avg/max) = 5.299 | 5.301 | 5.303 Mbytes
+Step Temp E_pair E_mol TotEng Press Volume 
+       0          300   -14840.055            0   -14747.026    4722.4095    167706.86 
+    2000    310.25853   -15690.639            0    -15594.43    -649.8147    157666.71 
+    4000    293.99806   -15750.063            0   -15658.896   -61.019432    153274.01 
+    6000    298.34771   -15783.365            0   -15690.848   -122.51404    151593.11 
+    8000    307.00699   -15781.524            0   -15686.322   -208.24269     152387.1 
+   10000    312.39283   -15788.001            0    -15691.13    488.99179    150349.84 
+   12000    303.00324   -15796.056            0   -15702.096   -878.27176    149239.12 
+   14000    297.16142   -15796.172            0   -15704.024    34.830381    148093.22 
+   16000    300.84822   -15801.048            0   -15707.756   -176.64155    147683.26 
+   18000    298.26992   -15819.686            0   -15727.194    328.98351    150408.04 
+   20000     296.3355   -15816.445            0   -15724.553     64.53349    150120.61 
+Loop time of 33.61 on 4 procs for 20000 steps with 2400 atoms
+
+Performance: 51.413 ns/day, 0.467 hours/ns, 595.060 timesteps/s
+65.1% CPU use with 4 MPI tasks x no OpenMP threads
+
+MPI task timing breakdown:
+Section |  min time  |  avg time  |  max time  |%varavg| %total
+---------------------------------------------------------------
+Pair    | 22.556     | 23.768     | 24.954     |  18.2 | 70.72
+Neigh   | 6.0851     | 6.3697     | 6.6322     |   7.8 | 18.95
+Comm    | 1.4299     | 2.5649     | 4.0695     |  60.5 |  7.63
+Output  | 0.0043975  | 0.0045219  | 0.004728   |   0.2 |  0.01
+Modify  | 0.82076    | 0.82923    | 0.84302    |   1.0 |  2.47
+Other   |            | 0.07376    |            |       |  0.22
+
+Nlocal:        600.000 ave         614 max         574 min
+Histogram: 1 0 0 0 0 0 1 0 0 2
+Nghost:        1361.00 ave        1418 max        1300 min
+Histogram: 1 0 0 1 0 0 0 1 0 1
+Neighs:        0.00000 ave           0 max           0 min
+Histogram: 4 0 0 0 0 0 0 0 0 0
+FullNghs:      20701.5 ave       21532 max       18982 min
+Histogram: 1 0 0 0 0 0 0 1 0 2
+
+Total # of neighbors = 82806
+Ave neighs/atom = 34.502500
+Neighbor list builds = 2183
+Dangerous builds = 367
+unfix			    1
+undump 			    1
+
+# write_restart relax.equil
+
+# Define variables
+variable		    tmpx equal "lx"
+variable            tmpy equal "ly"
+variable 		    lx0 equal ${tmpx}
+variable 		    lx0 equal 94.8327332308887
+variable 		    ly0 equal ${tmpy}
+variable 		    ly0 equal 82.1275560882614
+variable 		    strainx equal "(lx - v_lx0)/v_lx0"
+variable 		    stressx equal "-pxx/10000*lz/3.35" # Bar-->GPa
+variable 		    stressy equal "-pyy/10000*lz/3.35" # Bar-->GPa
+
+# Deform: tensile strain
+reset_timestep 		0
+fix 				1 all npt temp ${T} ${T} $(100*dt) y 0 0 $(1000*dt) z 0 0 $(1000*dt)
+fix 				1 all npt temp 300 ${T} $(100*dt) y 0 0 $(1000*dt) z 0 0 $(1000*dt)
+fix 				1 all npt temp 300 300 $(100*dt) y 0 0 $(1000*dt) z 0 0 $(1000*dt)
+fix 				1 all npt temp 300 300 0.10000000000000000555 y 0 0 $(1000*dt) z 0 0 $(1000*dt)
+fix 				1 all npt temp 300 300 0.10000000000000000555 y 0 0 1 z 0 0 $(1000*dt)
+fix 				1 all npt temp 300 300 0.10000000000000000555 y 0 0 1 z 0 0 1
+# fix 				1 all nvt temp ${T} ${T} $(100*dt)
+fix					2 all deform 100 x erate ${srate} remap x units box
+fix					2 all deform 100 x erate 0.005 remap x units box
+fix 				3 all print 100 "${strainx} ${stressx} ${stressy}" file stress-strain-${percent}.dat screen no
+fix 				3 all print 100 "${strainx} ${stressx} ${stressy}" file stress-strain-0.25.dat screen no
+dump				1 all custom 100 graphene_strain.xyz id type x y z
+
+run 				50000
+Per MPI rank memory allocation (min/avg/max) = 5.299 | 5.302 | 5.304 Mbytes
+Step Temp E_pair E_mol TotEng Press Volume 
+       0     296.3355   -15816.445            0   -15724.553     64.53349    150120.61 
+    2000     294.8923   -15832.497            0   -15741.052    -8.688174     152119.4 
+    4000    306.58107   -15834.044            0   -15738.975   -805.11935    149658.85 
+    6000    306.60328   -15835.163            0   -15740.087   -1268.4537    142357.16 
+    8000     305.7271   -15844.541            0   -15749.736   -1601.7705     140190.9 
+   10000    298.93556   -15846.689            0   -15753.991   -3052.2376    133490.63 
+   12000    295.44952   -15839.967            0   -15748.349   -4133.8667    130383.68 
+   14000    301.21038   -15830.879            0   -15737.475   -6040.1919    126875.77 
+   16000    301.20063   -15818.024            0   -15724.624   -7091.5163    121569.91 
+   18000    298.49006   -15816.742            0   -15724.182   -8628.3705    115954.72 
+   20000    304.09971   -15797.236            0   -15702.936   -10041.931    112272.21 
+   22000    302.50589   -15784.682            0   -15690.876   -12580.303    110177.95 
+   24000    296.24034    -15769.51            0   -15677.647   -13071.535    109622.43 
+   26000    299.26407   -15779.666            0   -15686.866   -12426.431    111080.39 
+   28000    299.00965    -15756.27            0   -15663.549   -14091.809    109031.29 
+   30000    308.12489   -15742.411            0   -15646.863   -16500.618    101525.69 
+   32000    318.18886   -15758.956            0   -15660.287    -14217.73    100271.27 
+   34000    291.77209   -15750.898            0   -15660.421    -13547.47    97882.868 
+   36000    291.97511   -15738.761            0   -15648.221    -15864.73    95774.438 
+   38000    345.77756   -15776.897            0   -15669.673   -10777.107    97027.397 
+   40000    300.92931   -15837.012            0   -15743.696   -6208.4193    95188.376 
+   42000    301.96287   -15878.881            0   -15785.244   -7234.2548    96445.966 
+   44000    301.80429   -15876.031            0   -15782.443   -7070.4645    93705.995 
+   46000    312.06756   -15870.826            0   -15774.056   -6999.8556    91877.556 
+   48000    295.40045   -15873.365            0   -15781.763   -7119.9998    94922.199 
+   50000    306.82071   -15864.618            0   -15769.474   -7591.8014    92712.887 
+Loop time of 88.9771 on 4 procs for 50000 steps with 2400 atoms
+
+Performance: 48.552 ns/day, 0.494 hours/ns, 561.942 timesteps/s
+65.0% CPU use with 4 MPI tasks x no OpenMP threads
+
+MPI task timing breakdown:
+Section |  min time  |  avg time  |  max time  |%varavg| %total
+---------------------------------------------------------------
+Pair    | 58.101     | 60.662     | 64.808     |  32.4 | 68.18
+Neigh   | 15.828     | 16.416     | 17.051     |  12.1 | 18.45
+Comm    | 3.4031     | 8.1741     | 10.43      |  98.6 |  9.19
+Output  | 0.99362    | 1.0081     | 1.0179     |   0.9 |  1.13
+Modify  | 2.5059     | 2.5309     | 2.5452     |   0.9 |  2.84
+Other   |            | 0.1863     |            |       |  0.21
+
+Nlocal:        600.000 ave         664 max         548 min
+Histogram: 2 0 0 0 0 0 0 1 0 1
+Nghost:        1449.75 ave        1531 max        1347 min
+Histogram: 1 0 0 0 1 0 0 1 0 1
+Neighs:        0.00000 ave           0 max           0 min
+Histogram: 4 0 0 0 0 0 0 0 0 0
+FullNghs:      22256.0 ave       25495 max       18979 min
+Histogram: 1 0 0 1 0 0 1 0 0 1
+
+Total # of neighbors = 89024
+Ave neighs/atom = 37.093333
+Neighbor list builds = 5501
+Dangerous builds = 1003
+
+# print 			    "Initial Length LX0: ${lx0}"
+# print 			    "Initial Length LY0: ${ly0}"
+# print 			    "Simulation DONE !"
+Total wall time: 0:02:02
